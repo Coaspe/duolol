@@ -4,25 +4,29 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../style/Main.css'
 import { useState } from 'react';
+import User from './Users';
 
 
 const Main = () => {
-    const [navTitle, setNavTitle] = useState("티어 전체")
-    const [navLocationTitle, setNavLocationTitle] = useState("KR")
+    const [navTitle, setNavTitle] = useState<String>("티어 전체")
+    const [navLocationTitle, setNavLocationTitle] = useState<String>("KR")
+    const [tier, setTier] = useState("ALL")
+    const [line, setLine] = useState("ALL")
+    const [location, setLocation] = useState("KR")
 
     return (
-        <div className="col-span-3 pt-14 z-40">
+        <div className="col-span-3 pt-32 z-40">
             <div className="flex flex-col">
-                <div className="flex justify-between"><p>필터</p> <p>지역</p></div>
+                <div className="flex justify-between text-white"><p>필터</p> <p>지역</p></div>
                 <div className="flex justify-between">
                     <div className="flex justify-between items-center">
                         <Navbar variant="dark" bg="dark" expand="lg">
-                            <Nav>
+                            <Nav
+                            >
                                 <NavDropdown
                                     id="nav-dropdown-dark-example"
                                     title={navTitle}
                                     menuVariant="dark"
-                                    className="text-white font-bold"
                                 >
                                     <NavDropdown.Item href="#action/3.1" onClick={() => setNavTitle("티어 전체")}>티어 전체</NavDropdown.Item>
                                     <NavDropdown.Item href="#action/3.1" onClick={() => setNavTitle("브론즈")}>브론즈</NavDropdown.Item>
@@ -204,6 +208,7 @@ const Main = () => {
                         </Nav>
                     </Navbar>
                 </div>
+                <User tier={tier} line={line} location={location} />
             </div>
         </div>
     )
