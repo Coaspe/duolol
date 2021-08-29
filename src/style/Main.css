@@ -1,0 +1,23 @@
+.dropdown-toggle::after {
+    margin-left: 2em;
+}
+
+.navbar {
+    padding-top : 0.2rem;
+    padding-bottom : 0.2rem;
+    border-radius: 3%;
+}
+.dropdown-menu {
+    min-width: 5rem;
+}
+ul {
+    margin-bottom: 0;
+}
+.all_li_content {
+    border-left: 1px solid gray;
+    border-top: 1px solid gray;
+    border-bottom: 1px solid gray;
+}
+.top_li_content{
+        border: 1px solid gray;
+}

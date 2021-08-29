@@ -1,24 +1,21 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Fixedheader from "./components/Fixedheader";
+import Main from "./components/Main";
+import './style/App.css'
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="text-gray-400 relative">
+      <img
+        src="/header.jpeg"
+        className="absolute z-0 header_img"
+        style={{ top: 0, left: 0 }}
+        alt="header" />
+      <Fixedheader />
+      <div className="grid grid-cols-5 h-full w-full z-50">
+        <div className="col-span-1"></div>
+        <Main />
+        <div className="col-span-1"></div>
+      </div>
     </div>
   );
 }
