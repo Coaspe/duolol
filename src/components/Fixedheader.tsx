@@ -7,7 +7,7 @@ import Modal from 'react-bootstrap/Modal'
 import { getMatchesByPuuid, getSummonerInfoBySummonerName } from '../service/mostThree'
 import axios, { AxiosResponse } from "axios";
 import { useEffect } from 'react'
-import { api_key } from "../../api"
+import { api_key } from "../api"
 
 interface summonerData {
     accountId: String;

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { api_key } from "../../api"
+import { api_key } from "../api"
 
 interface summonerData {
     data: {
