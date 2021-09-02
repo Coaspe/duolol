@@ -1,8 +1,11 @@
+import { useContext } from "react";
 import Fixedheader from "./components/Fixedheader";
 import Main from "./components/Main";
+import FirebaseContext from "./context/firebase";
 import './style/App.css'
-
 const App = () => {
+  const { firebase, db } = useContext(FirebaseContext)
+  
   return (
     <div className="text-gray-400 relative">
             <img

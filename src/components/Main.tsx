@@ -13,6 +13,7 @@ const Main = () => {
     const [tier, setTier] = useState("ALL")
     const [line, setLine] = useState("ALL")
     const [location, setLocation] = useState("KR")
+    
 
     return (
         <div className="col-span-3 pt-32 z-40">
