@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { valueProps, firebase, db  } from "../lib/firebase";
+import { Firebase, firestore, FieldValue  } from "../lib/firebase";
 
-const FirebaseContext = createContext<valueProps>({firebase,db});
+const FirebaseContext = createContext({Firebase,firestore, FieldValue});
 export default FirebaseContext;

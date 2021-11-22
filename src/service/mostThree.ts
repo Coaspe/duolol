@@ -1,5 +1,5 @@
 import axios from "axios";
-import { api_key } from "../api"
+import { api_key1 } from "../api"
 
 interface summonerData {
     data: {
@@ -13,7 +13,7 @@ interface summonerData {
     }
 }
 export async function getSummonerInfoBySummonerName(summonerName: String) {
-    const data : any = await axios.get<any>(`https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${summonerName}?api_key=${api_key}`)
+    const data : any = await axios.get<any>(`https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${summonerName}?api_key=${api_key1}`)
         .then((res) => console.log("Api Response", res))
     return data
 }

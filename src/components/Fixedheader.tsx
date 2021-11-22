@@ -2,22 +2,14 @@ import '../style/Fixedheader.css'
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 import NavDropdown from 'react-bootstrap/NavDropdown'
-import { useState } from 'react'
+import { Key, useState } from 'react'
 import Modal from 'react-bootstrap/Modal'
-import { getMatchesByPuuid, getSummonerInfoBySummonerName } from '../service/mostThree'
 import axios, { AxiosResponse } from "axios";
 import { useEffect } from 'react'
-import { api_key } from "../api"
-
-interface summonerData {
-    accountId: String;
-    id: String;
-    name: String;
-    profileIconId: Number;
-    puuid: String;
-    revisionDate: Number;
-    summonerLevel: Number;
-}
+import { api_key1, api_key2 } from "../api"
+import { match, matchRes, summonerData, matchInfo } from '../types'
+import { uploadPost, uploadUserInfo, getUserInfo } from '../service/firebase'
+import { Firebase, firestore, FieldValue } from "../lib/firebase";
 
 const Fixedheader = () => {
     const initialData : summonerData= {
@@ -29,32 +21,429 @@ const Fixedheader = () => {
         revisionDate: -1,
         summonerLevel: -1
     }
-  const [lang, setLang] = useState<String>("한국어")
-  const [show, setShow] = useState(false);
+  const [lang, setLang] = useState<string>("한국어")
+    const [show, setShow] = useState(false);
+    
   const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+    const handleShow = () => setShow(true);
+    
     const [dataVal, setDataVal] = useState<summonerData>(initialData);
-    const [sumName, setSumName] = useState<String>("");
-    const [mainPosition, setMainPosition] =useState<String>("")
-    const [comment, setComment] = useState<String>("")
+    const [dataValT, setDataValT] = useState<summonerData>(initialData);
 
+    const [matchesIdV4, setMatchesIdV4] = useState<string[]>([]);
+    const [matchesIdV5, setMatchesIdV5] = useState<string[]>([]);
+    const [matchesId, setMatchesId] = useState<string[]>([]);
+
+    const [matchesInfo, setMatchesInfo] = useState<string[][]>([]);
+    const [matchesInfo2, setMatchesInfo2] = useState<matchInfo[]>([]);
+    const [matchesInfo3, setMatchesInfo3] = useState<matchInfo[]>([]);
+
+    const [firebaseMatchesInfo, setFirebaseMatchesInfo] = useState<{
+        champName: string; winRate: number; total: number; KDA: string;
+    }[]>([]);
+
+    const [sumName, setSumName] = useState<string>("");
+    const [mainPosition, setMainPosition] =useState<string>("")
+    const [comment, setComment] = useState<string>("")
+
+    const [count, setCount] = useState<number>(0)
+    const [beginTimeV4, setBeginTimeV4] = useState<number>(1610118000000);
+    const [endTimeV4, setEndTimeV4] = useState<number>(1610118000000 + 604800000)
+    const [totalMatchesLength, setTotalMatchesLength] = useState<number>(0)
+    const [matchQueryEndV4, setMatchQueryEndV4] = useState<Boolean>(false)
+    const [matchQueryEndV5, setMatchQueryEndV5] = useState<Boolean>(false)
+    const [lastestEpoch, setLastestEpoch] = useState<number>(0)
+    const [matchQueryBeginIndex, setMatchQueryBeginIndex] = useState(0)
+    const [tmp, setTmp] = useState(0)
+    const [userInfoExists, setUserInfoExists] = useState<number>(2)
+    const [password, setPassword] = useState<number>(0)
+    const ENDTIME = 1625097600000
+    let ajk = [
+    "KR_5396336266",
+    "KR_5396088288",
+    "KR_5396079438",
+    "KR_5394734536",
+    "KR_5394679909",
+    "KR_5394582212",
+    "KR_5394507604",
+    "KR_5394285092",
+    "KR_5394248910",
+    "KR_5386907562",
+    "KR_5371981153",
+    "KR_5358910918",
+    "KR_5358895454",
+    "KR_5328705439",
+    "KR_5276245053",
+    "KR_5103221453",
+    "KR_5097772320",
+    "KR_5090706430",
+    "KR_5090674250",
+    "KR_5090578648",
+]
     const handleSubmit = async() => {
-        // const data = getSummonerInfoBySummonerName(sumName)
-        await axios.get<any>(`https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${sumName}?api_key=${api_key}`)
-        .then((res) => setDataVal(res.data))
+        // await firestore.collection("userInfo").doc(sumName).get().then((res) => {
+        //     setUserInfoExists(res.exists ? 1 : 0)
+        // })
+        // await axios.get<any>(`https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${sumName}?api_key=${api_key1}`)
+        //     .then((res) => {
+        //         setDataVal(res.data)
+        //     })
+        // await axios.get<any>(`https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${sumName}?api_key=${api_key2}`)
+        //     .then((res) => {
+        //         setDataValT(res.data)
+        //     })
+        Promise.all(ajk.map(async (id: string) => (
+            await axios.get<any>(`https://asia.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${api_key2}`)
+        )))
+            .then(() => {
+                ajk.filter((info: any) => (info.info.queueId === 420))
+                console.log("ajk",ajk);
+            })
     }
-
+    
     useEffect(() => {
-        const getMatches = async (dataVal: summonerData) => {
-            await axios.get<String[]>(`https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${dataVal.puuid}/ids?api_key=${api_key}`,{params:{type:"ranked"}})
-            .then((res) => console.log("Get Matches", res)
+        const getMatchesV5 = async (dataVal: summonerData, beginIndex: number) => {
+                await axios.get<string[]>(`https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${dataVal.puuid}/ids?api_key=${api_key1}`, {
+                        params: {
+                                queue: 420,
+                                count: 100,
+                                start: beginIndex,
+                                startTime : 1625097600
+                }
+            })
+                .then((res: any) => {
+                    if (res.data.length === 0) {
+                        console.log("V5 set true");
+                        setMatchQueryEndV5(true)
+                        return;
+                    } else {
+                        console.log("Get Matches V5", res)
+                        setMatchesIdV5(matchesIdV5.concat(res.data))
+                        setTmp(tmp + 100)
+                    }
+                }
             )
         }
-        if (dataVal !== initialData) {
-            getMatches(dataVal)
+        if (dataVal.summonerLevel !== -1) {
+            if (!matchQueryEndV5) {
+                if (userInfoExists === 0) {
+                    getMatchesV5(dataVal, tmp)
+                } else if (userInfoExists === 1) {
+                    
+                }
+            }
         }
-    }, [dataVal])
-    console.log("dataVal", dataVal);
+    }, [dataVal, tmp, userInfoExists])
+
+    useEffect(() => {
+        // 시즌 시작일 ~ 6월 17일
+        const getMatchesV4 = async (dataVal: summonerData, beginIndex: number, beginTime: number, endTime: number) => {
+            try {
+                setCount(count + 1)
+                console.log("count", count);
+                await axios.get(`https://kr.api.riotgames.com/lol/match/v4/matchlists/by-account/${dataVal.accountId}?api_key=${api_key1}`, {
+                    params: {
+                        queue: 420,
+                        beginTime: beginTime,
+                        endTime: endTime,
+                        beginIndex: beginIndex
+                    }
+                }).then((res: any) => {
+                    console.log(res.data.matches);
+                    setMatchesIdV4(matchesIdV4.concat(res.data.matches.map((match: match) => (`KR_${match.gameId.toString()}`))))
+                    if (res.data.matches > 100) {
+                        setMatchQueryBeginIndex(matchQueryBeginIndex + 100)
+                    } else {
+                        setBeginTimeV4(endTimeV4 + 1)
+                        setMatchQueryBeginIndex(0)
+                        setEndTimeV4((endTimeV4 + 604800000) >= ENDTIME ? ENDTIME : endTimeV4 + 604800000)
+                    }
+                    if (endTimeV4 === ENDTIME) {
+                        console.log("V4 set true");
+
+                        setMatchQueryEndV4(true)
+                    }
+                    console.log("Get Matches V4", res)
+                    console.log("endTimeV4",endTimeV4);
+                    }
+                )
+            } catch (error: any) {
+                console.log("Error", error.message);
+                if (endTimeV4 === ENDTIME) {
+                        console.log("V4 set true");
+
+                    setMatchQueryEndV4(true)
+                    return;
+                } else {
+                    setBeginTimeV4(endTimeV4 + 1)
+                    setMatchQueryBeginIndex(0)
+                    setEndTimeV4((endTimeV4 + 604800000) >= ENDTIME ? ENDTIME : endTimeV4 + 604800000)
+                    console.log("endTimeV4",endTimeV4);
+                    return;
+                }
+            }
+        }
+            if (dataVal.summonerLevel !== -1 && userInfoExists === 0) {
+                if (!matchQueryEndV4) {
+                    getMatchesV4(dataVal, matchQueryBeginIndex, beginTimeV4, endTimeV4)
+                }
+            }
+    }, [dataVal, matchQueryBeginIndex, endTimeV4, userInfoExists])
+
+    const arrayArrange = (matchesId: string[]) => {
+        const aa = matchesId
+        let cc: string[][] = []
+        let kk: number = 0
+        if (aa.length < 21) {
+            cc.push(aa)
+            setMatchesInfo(cc)
+        } else {
+            while (aa.length > 0) {
+                let bb = aa.splice(0, 20)
+                cc.push(bb)
+            }
+            console.log("cc",cc);
+            setMatchesInfo(cc)
+        }
+        for (let i = 0; i < cc.length; i++) {
+            kk += cc[i].length
+        }
+        setTotalMatchesLength(kk)
+    }
+    
+    const getMatchInfo = async (matchesInfoArg:string[][]) => {
+        let even : [][]= []
+        let odd : [][]= []
+        let t: number = -2300
+        let ft: number = 0
+        for (let idx = 0; idx < matchesInfoArg.length; idx += 2) {
+
+            let twentyChunk = matchesInfoArg[idx];
+            let twentyChunk2 = matchesInfoArg[idx + 1]
+
+            if ((idx % 10 === 0) && (idx !== 0)) {
+                ft += 121000
+                setTimeout(() => {
+                    console.log(`${idx}th chunk requests!!!`);
+                        Promise.all(twentyChunk.map(async (match: any) => (await axios.get(`https://asia.api.riotgames.com/lol/match/v5/matches/${match}?api_key=${api_key1}`))))
+                        .then((res: any) => {
+                                even.push(res)
+                                console.log("even", even);
+                                if (idx === matchesInfoArg.length - 1) {
+                                    extractWinChampLine(even, 1)
+                                    extractWinChampLine(odd, 2)
+                                }
+                            })
+                        }, t + ft)
+                        if (twentyChunk2 !== undefined) {
+                            setTimeout(() => {
+                                console.log(`${idx + 1}th chunk requests!!!`);
+                                Promise.all(twentyChunk2.map(async (match: any) => (await axios.get(`https://asia.api.riotgames.com/lol/match/v5/matches/${match}?api_key=${api_key2}`))))
+                                .then((res: any) => {
+                                    odd.push(res)
+                                        console.log("odd", odd);
+                                        if (idx === matchesInfoArg.length - 2) {
+                                            extractWinChampLine(even, 1)
+                                            extractWinChampLine(odd, 2)
+                                    }
+                                    })
+                                }, t + ft)
+                            }
+            } else {
+                t += 2300
+                setTimeout(() => {
+                    console.log(`${idx}th chunk requests!!!`);
+                    Promise.all(twentyChunk.map(async (match: any) => (await axios.get(`https://asia.api.riotgames.com/lol/match/v5/matches/${match}?api_key=${api_key1}`))))
+                    .then((res: any) => {
+                            even.push(res)
+                            console.log("even", even);
+                            if (idx === matchesInfoArg.length - 1) {
+                                extractWinChampLine(even, 1)
+                                extractWinChampLine(odd, 2)
+                            }
+                        })
+                }, t + ft)
+                if (twentyChunk2 !== undefined) {
+                    setTimeout(() => {
+                        console.log(`${idx + 1}th chunk requests!!!`);
+                        Promise.all(twentyChunk2.map(async (match: any) => (await axios.get(`https://asia.api.riotgames.com/lol/match/v5/matches/${match}?api_key=${api_key2}`))))
+                        .then((res: any) => {
+                                odd.push(res)
+                                console.log("odd", odd);
+                            if (idx === matchesInfoArg.length - 2) {
+                                extractWinChampLine(even, 1)
+                                extractWinChampLine(odd, 2)
+                            }
+                            })
+                        }, t + ft)
+                }
+            }
+        }
+    }
+    
+    const extractWinChampLine = (matches: [][], check: number) => {
+        let tmp: matchInfo[] = []
+        const extracted: any = matches.map((mathcesChunk) => {
+                console.log("mathcesChunk", mathcesChunk);
+
+            // let mathcesChunk = tmpMathcesChunk.filter((tmp:any) =>(tmp.data.info.participants[0].gameEndedInEarlySurrender !== true))
+            return mathcesChunk.map((match: any) => {
+                console.log("match", match);
+                console.log("dataVal.puuid", dataVal.puuid);
+                console.log("dataValT.puuid", dataValT.puuid);
+
+                
+                let me = match.data.info.participants.filter((player: any) => (player.puuid === (check === 2 ? dataValT.puuid : dataVal.puuid)))
+                console.log("me", me);
+                
+                tmp.push({
+                    championName: me[0].championName,
+                    win: me[0].win,
+                    position: me[0].teamPosition,
+                    kills: me[0].kills,
+                    deaths: me[0].deaths,
+                    assists: me[0].assists
+                })
+                return {
+                    championName: me[0].championName,
+                    win: me[0].win,
+                    position: me[0].teamPosition,
+                    kills: me[0].kills,
+                    deaths: me[0].deaths,
+                    assists: me[0].assists
+                }
+            }
+            )
+        })
+        if (check === 1) {
+            setMatchesInfo3(tmp)
+        } else {
+            setMatchesInfo2(tmp)
+        }
+        console.log("matchesInfo2", matchesInfo2);
+        
+        return extracted
+    }
+    useEffect(() => {
+        if (matchQueryEndV4 && matchQueryEndV5) {
+            setMatchesId(matchesIdV5.concat(matchesIdV4))
+        }
+    }, [matchQueryEndV4, matchQueryEndV5])
+    
+    
+    useEffect(() => {
+        if (matchesId.length > 0) {
+            arrayArrange(matchesId)
+        }
+    }, [matchesId])
+    
+    useEffect(() => {
+        if ((matchesInfo.length !== 0) && (typeof matchesInfo[0][0] === "string")) {
+            getMatchInfo(matchesInfo)
+        }
+    }, [matchesInfo])
+
+    useEffect(() => {
+        console.log("matchesIdV4",matchesIdV4);
+    }, [matchesIdV4])
+    useEffect(() => {
+            const arrangeByLane = (info: matchInfo[]) => {
+                let tmp: { [key: string]: matchInfo[] } = {}
+                let tmp2: {
+                    [key: string]: {
+                        total: number,
+                        win: number,
+                        winRate: number,
+                        kills: number;
+                        deaths: number;
+                        assists: number;
+                    }
+                } = {}
+                let tmp3 = []
+                tmp['TOP'] = []
+                tmp['JUNGLE'] = []
+                tmp['MIDDLE'] = []
+                tmp['BOTTOM'] = []
+                tmp['UTILITY'] = []
+                tmp['ELSE'] = []
+                let positions = ['TOP','JUNGLE','MIDDLE','BOTTOM','UTILITY']
+
+                for (let idx = 0; idx < info.length; idx++) {
+                    if (!positions.includes(info[idx].position as string)) {
+                        tmp['ELSE'].push(info[idx])
+                    }
+                    else
+                        {
+                            tmp[info[idx].position as Key].push(info[idx])
+                        }
+                }
+
+                for (let key in tmp) {
+                    if (tmp[key as Key].length === 0) {
+                        continue;
+                    }
+                    for (let idx = 0; idx < tmp[key as Key].length; idx++) {
+                        let element = tmp[key as Key][idx];
+                        if (tmp2[element.championName as Key] === undefined ) {
+                            tmp2[element.championName as Key] = {
+                                total: 1,
+                                win: tmp[key as Key][idx].win ? 1 : 0,
+                                winRate: 0,
+                                kills: tmp[key as Key][idx].kills,
+                                deaths: tmp[key as Key][idx].deaths,
+                                assists:  tmp[key as Key][idx].assists
+                            }
+                        } else {
+                            tmp2[element.championName as Key].total += 1
+                            tmp2[element.championName as Key].kills += element.kills
+                            tmp2[element.championName as Key].deaths += element.deaths
+                            tmp2[element.championName as Key].assists += element.assists
+                            if (tmp[key as Key][idx].win === true) {
+                                tmp2[element.championName as Key].win += 1
+                            }
+                        }
+                    }
+                }
+
+                for (let key in tmp2) {
+                    let el = tmp2[key as Key]
+                    el.winRate = el.win / el.total
+                    tmp3.push({
+                        champName: key,
+                        KDA: `${(el.kills / el.total).toFixed(1)}/${(el.deaths / el.total).toFixed(1)}/${(el.assists / el.total).toFixed(1)}`,
+                        total: el.total,
+                        winRate: Math.round(el.winRate * 100)
+                    })
+                }
+                tmp3.sort(function(a, b) {
+                    return b.total - a.total;
+                });
+                setFirebaseMatchesInfo(tmp3)
+        }
+        if (matchesInfo2.length + matchesInfo3.length >= totalMatchesLength) {
+            arrangeByLane(matchesInfo2.concat(matchesInfo3))
+        }
+        console.log(totalMatchesLength);
+        console.log("matchesInfo2", matchesInfo2);
+    }, [matchesInfo2])
+
+    useEffect(() => {
+        console.log("firebaseMatchesInfo", firebaseMatchesInfo);
+        if (firebaseMatchesInfo.length > 0) {
+            uploadUserInfo(firebaseMatchesInfo, sumName, 0)
+            uploadPost(comment, mainPosition, password, sumName)
+            setMatchesIdV4([])
+            setMatchesInfo([])
+            setMatchesInfo2([])
+            setMatchQueryEndV4(false)
+            setDataVal(initialData)
+            setComment("")
+            setMainPosition("")
+            setSumName("")
+        }
+    }, [firebaseMatchesInfo])
+
+
     return (
         <>
             {show ? (
@@ -65,7 +454,6 @@ const Fixedheader = () => {
             <Modal.Body className="bg-modalBg">
                 <span className="text-sm font-bold block mb-2">소환사 이름(KR)</span>
                 <input onChange={(e) => { setSumName(e.target.value) }} type="text" className="w-full border-1 pl-3 border-modalBorder h-12 rounded-sm bg-modalInput"/>
-
                 <span className="text-sm font-bold block mt-3 mb-2">주 포지션</span>
                 <ul className="flex ml-0 pl-0">
                             <li
@@ -223,7 +611,7 @@ const Fixedheader = () => {
                 <input onChange={(e) => { setComment(e.target.value) }} type="text" placeholder="서포터 구합니다. 같이 게임해요!" className="text-sm pl-3 w-full border-1 border-modalBorder h-12 rounded-sm bg-modalInput" />
 
                 <span className="text-sm font-bold block mt-3 mb-2">비밀번호</span>
-                <input type="password" placeholder="4자리 숫자로 입력해주세요." maxLength={4} minLength={4} className="text-sm pl-3 w-full border-1 border-modalBorder h-12 rounded-sm bg-modalInput"/>
+                        <input type="password" placeholder="4자리 숫자로 입력해주세요." maxLength={4} minLength={4} className="text-sm pl-3 w-full border-1 border-modalBorder h-12 rounded-sm bg-modalInput" onChange={(e)=>{setPassword(Number(e.target.value))}}/>
             </Modal.Body>
             <Modal.Footer className="bg-modalBg border-0 flex items-center justify-center w-full">
                 <button className="bg-modalCancleBtn rounded-sm h-12 ss border-1 border-modalBorder hover:bg-modalBorder text-sm font-bold" onClick={handleClose}>취소</button>

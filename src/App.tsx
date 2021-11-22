@@ -4,7 +4,7 @@ import Main from "./components/Main";
 import FirebaseContext from "./context/firebase";
 import './style/App.css'
 const App = () => {
-  const { firebase, db } = useContext(FirebaseContext)
+  const { firestore, Firebase, FieldValue } = useContext(FirebaseContext)
   
   return (
     <div className="text-gray-400 relative">

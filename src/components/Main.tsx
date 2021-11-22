@@ -6,15 +6,41 @@ import '../style/Main.css'
 import { useState } from 'react';
 import User from './Users';
 
-
 const Main = () => {
+
+
+    // var webdriver: NodeRequire = require(‘selenium-webdriver’);
+
+    // var browser_name = new webdriver.Builder();
+
+    // withCapabilities(webdriver.Capabilities.firefox()).build();
+
+    // browser.get(‘http:/www.google.com’);
+
+    // var promise = browser_name.getTitle();
+
+    // promise.then(function(title) 
+
+    // {
+
+    // console.log(title);
+
+    // });
+
+    // browser.quit();
     const [navTitle, setNavTitle] = useState<String>("티어 전체")
     const [navLocationTitle, setNavLocationTitle] = useState<String>("KR")
     const [tier, setTier] = useState("ALL")
     const [line, setLine] = useState("ALL")
     const [location, setLocation] = useState("KR")
     
-
+    fetch('https://www.google.com', {
+        mode : "no-cors"
+    })
+    .then(res => res.text())
+    .then(res => console.log(res))
+    .catch(err => console.error(err));
+    
     return (
         <div className="col-span-3 pt-32 z-40">
             <div className="flex flex-col">
